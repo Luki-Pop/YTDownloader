@@ -15,25 +15,25 @@ Section "Install"
 
     SetOutPath "$INSTDIR"
 
-    ; Kopiujemy pliki aplikacji
+    ; Pliki aplikacji
+    File "YTDownloader.exe"
     File "main.py"
     File "gui.py"
-    File "run.bat"
-    File "requirements.txt"
     File "updater.py"
     File "version.txt"
+    File "requirements.txt"
 
-    ; Instalujemy zależności Pythona
+    ; Instalacja zależności Pythona
     DetailPrint "Installing Python dependencies..."
     nsExec::ExecToLog 'cmd /c pip install -r "$INSTDIR\requirements.txt"'
 
-    ; Tworzymy skrót na pulpicie
-    CreateShortcut "$DESKTOP\YTDownloader.lnk" "$INSTDIR\run.bat"
+    ; Skrót na pulpicie
+    CreateShortcut "$DESKTOP\YTDownloader.lnk" "$INSTDIR\YTDownloader.exe"
 
-    ; Tworzymy uninstall
+    ; Uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
 
-    ; Dodajemy wpis do rejestru
+    ; Rejestr
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME}"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" "$INSTDIR\uninstall.exe"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayVersion" "${VERSION}"
@@ -45,13 +45,15 @@ SectionEnd
 Section "Uninstall"
 
     Delete "$DESKTOP\YTDownloader.lnk"
+
+    Delete "$INSTDIR\YTDownloader.exe"
     Delete "$INSTDIR\main.py"
     Delete "$INSTDIR\gui.py"
-    Delete "$INSTDIR\run.bat"
-    Delete "$INSTDIR\requirements.txt"
-    Delete "$INSTDIR\uninstall.exe"
     Delete "$INSTDIR\updater.py"
     Delete "$INSTDIR\version.txt"
+    Delete "$INSTDIR\requirements.txt"
+    Delete "$INSTDIR\uninstall.exe"
+
     RMDir "$INSTDIR"
 
     DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
