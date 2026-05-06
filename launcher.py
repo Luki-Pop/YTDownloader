@@ -4,6 +4,15 @@ import sys
 import shutil
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(BASE_DIR)
+
+
+
+log = os.path.join(BASE_DIR, "launcher.log")
+with open(log, "a") as f:
+    subprocess.call([...], stdout=f, stderr=f)
+
+
 
 def run_python(script):
     python = shutil.which("python") or shutil.which("python3")
