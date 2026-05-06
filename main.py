@@ -1,5 +1,6 @@
 import yt_dlp
 import os
+import imageio_ffmpeg
 
 QUALITY_MAP = {
     "360p": "bestvideo[height<=360]+bestaudio/best[height<=360]",
@@ -7,6 +8,8 @@ QUALITY_MAP = {
     "1080p": "bestvideo[height<=1080]+bestaudio/best[height<=1080]",
     "audio": "bestaudio"
 }
+
+FFMPEG_PATH = imageio_ffmpeg.get_ffmpeg_exe()
 
 
 def download_video(link: str, quality: str, save_path: str, progress_callback=None):
@@ -26,14 +29,14 @@ def download_video(link: str, quality: str, save_path: str, progress_callback=No
                     pass
 
     try:
-        # upewniamy się, że folder istnieje
         os.makedirs(save_path, exist_ok=True)
 
         ydl_opts = {
             "format": QUALITY_MAP[quality],
             "outtmpl": os.path.join(save_path, "%(title)s.%(ext)s"),
             "merge_output_format": "mp4",
-            "progress_hooks": [hook]
+            "progress_hooks": [hook],
+            "ffmpeg_location": FFMPEG_PATH,   # <-- KLUCZOWE!
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
