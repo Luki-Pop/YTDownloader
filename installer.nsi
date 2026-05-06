@@ -20,6 +20,8 @@ Section "Install"
     File "gui.py"
     File "run.bat"
     File "requirements.txt"
+    File "updater.py"
+    File "version.txt"
 
     ; Instalujemy zależności Pythona
     DetailPrint "Installing Python dependencies..."
@@ -48,7 +50,8 @@ Section "Uninstall"
     Delete "$INSTDIR\run.bat"
     Delete "$INSTDIR\requirements.txt"
     Delete "$INSTDIR\uninstall.exe"
-
+    Delete "$INSTDIR\updater.py"
+    Delete "$INSTDIR\version.txt"
     RMDir "$INSTDIR"
 
     DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
