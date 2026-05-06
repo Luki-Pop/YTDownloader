@@ -1,23 +1,30 @@
 import subprocess
-import sys
 import os
+import sys
+import shutil
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def run_python(script):
-    subprocess.call([sys.executable, os.path.join(BASE_DIR, script)])
+    python = shutil.which("python") or shutil.which("python3")
+    if not python:
+        raise RuntimeError("Python not found in PATH")
+    subprocess.call([python, os.path.join(BASE_DIR, script)])
 
 def main():
-    # 1. updater w tle
+    # 1. updater
     try:
         run_python("updater.py")
     except Exception as e:
         print("Updater error:", e)
 
-    # 2. uruchamiamy GUI
-    run_python("gui.py")
+    # 2. GUI
+    try:
+        run_python("gui.py")
+    except Exception as e:
+        print("GUI error:", e)
 
-    # 3. po zamknięciu GUI stosujemy aktualizacje
+    # 3. apply update
     try:
         import updater
         updater.apply_pending_update()
