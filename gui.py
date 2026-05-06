@@ -1,16 +1,13 @@
 import sys
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLabel,
-    QLineEdit, QPushButton, QMessageBox, QComboBox
+    QLineEdit, QPushButton, QMessageBox, QComboBox, QProgressBar
 )
 from PyQt6.QtCore import QThread, pyqtSignal
 
-from main import download_video  # <-- import logiki pobierania
+from main import download_video
 
 
-# -------------------------
-#   TŁUMACZENIA
-# -------------------------
 TRANSLATIONS = {
     "pl": {
         "title": "YT Downloader by Łukasz",
@@ -21,7 +18,8 @@ TRANSLATIONS = {
         "error": "BŁĄD: ",
         "empty": "Podaj link!",
         "lang_label": "Język:",
-        "quality": "Jakość:"
+        "quality": "Jakość:",
+        "progress": "Postęp:"
     },
     "en": {
         "title": "YT Downloader by Łukasz",
@@ -32,16 +30,15 @@ TRANSLATIONS = {
         "error": "ERROR: ",
         "empty": "Please enter a link!",
         "lang_label": "Language:",
-        "quality": "Quality:"
+        "quality": "Quality:",
+        "progress": "Progress:"
     }
 }
 
 
-# -------------------------
-#   WORKER (wątek)
-# -------------------------
 class DownloadWorker(QThread):
     finished = pyqtSignal(bool, str)
+    progress_changed = pyqtSignal(float)
 
     def __init__(self, link, quality, lang):
         super().__init__()
@@ -50,7 +47,14 @@ class DownloadWorker(QThread):
         self.lang = lang
 
     def run(self):
-        success, msg = download_video(self.link, self.quality)
+        def progress_callback(percent):
+            self.progress_changed.emit(percent)
+
+        success, msg = download_video(
+            self.link,
+            self.quality,
+            progress_callback=progress_callback
+        )
 
         if success:
             self.finished.emit(True, TRANSLATIONS[self.lang]["success"])
@@ -58,9 +62,6 @@ class DownloadWorker(QThread):
             self.finished.emit(False, TRANSLATIONS[self.lang]["error"] + msg)
 
 
-# -------------------------
-#   GŁÓWNE OKNO
-# -------------------------
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -101,6 +102,14 @@ class MainWindow(QWidget):
         self.quality_select.addItem("Audio only", "audio")
         layout.addWidget(self.quality_select)
 
+        # pasek postępu
+        self.progress_label = QLabel(TRANSLATIONS[self.lang]["progress"])
+        layout.addWidget(self.progress_label)
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setValue(0)
+        layout.addWidget(self.progress_bar)
+
         # przycisk
         self.button = QPushButton(TRANSLATIONS[self.lang]["download"])
         self.button.clicked.connect(self.start_download)
@@ -108,7 +117,6 @@ class MainWindow(QWidget):
 
         self.setLayout(layout)
 
-    # zmiana języka
     def change_language(self):
         self.lang = self.lang_select.currentData()
 
@@ -118,8 +126,8 @@ class MainWindow(QWidget):
         self.input.setPlaceholderText(TRANSLATIONS[self.lang]["placeholder"])
         self.button.setText(TRANSLATIONS[self.lang]["download"])
         self.quality_label.setText(TRANSLATIONS[self.lang]["quality"])
+        self.progress_label.setText(TRANSLATIONS[self.lang]["progress"])
 
-    # start pobierania
     def start_download(self):
         link = self.input.text().strip()
         quality = self.quality_select.currentData()
@@ -128,14 +136,20 @@ class MainWindow(QWidget):
             QMessageBox.warning(self, "Error", TRANSLATIONS[self.lang]["empty"])
             return
 
+        self.progress_bar.setValue(0)
         self.button.setEnabled(False)
+
         self.worker = DownloadWorker(link, quality, self.lang)
+        self.worker.progress_changed.connect(self.update_progress)
         self.worker.finished.connect(self.on_finished)
         self.worker.start()
 
-    # koniec pobierania
+    def update_progress(self, percent):
+        self.progress_bar.setValue(int(percent))
+
     def on_finished(self, success, message):
         self.button.setEnabled(True)
+        self.progress_bar.setValue(100)
 
         if success:
             QMessageBox.information(self, "OK", message)
@@ -143,7 +157,6 @@ class MainWindow(QWidget):
             QMessageBox.critical(self, "Error", message)
 
 
-# start aplikacji
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()

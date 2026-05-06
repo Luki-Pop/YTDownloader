@@ -7,17 +7,28 @@ QUALITY_MAP = {
     "audio": "bestaudio"
 }
 
-def download_video(link: str, quality: str):
+
+def download_video(link: str, quality: str, progress_callback=None):
     """
     Pobiera film z YouTube przy użyciu yt-dlp.
-    Zwraca: (success: bool, message: str)
+    progress_callback(percent) — funkcja wywoływana przy zmianie postępu.
     """
+
+    def hook(d):
+        if d["status"] == "downloading":
+            if progress_callback:
+                try:
+                    percent = d.get("_percent_str", "0%").replace("%", "").strip()
+                    progress_callback(float(percent))
+                except:
+                    pass
 
     try:
         ydl_opts = {
             "format": QUALITY_MAP[quality],
             "outtmpl": "%(title)s.%(ext)s",
-            "merge_output_format": "mp4"
+            "merge_output_format": "mp4",
+            "progress_hooks": [hook]
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
