@@ -1,7 +1,8 @@
 import sys
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLabel,
-    QLineEdit, QPushButton, QMessageBox, QComboBox, QProgressBar
+    QLineEdit, QPushButton, QMessageBox, QComboBox,
+    QProgressBar, QFileDialog
 )
 from PyQt6.QtCore import QThread, pyqtSignal
 
@@ -19,7 +20,9 @@ TRANSLATIONS = {
         "empty": "Podaj link!",
         "lang_label": "Język:",
         "quality": "Jakość:",
-        "progress": "Postęp:"
+        "progress": "Postęp:",
+        "choose_folder": "Wybierz folder",
+        "folder_label": "Folder zapisu:"
     },
     "en": {
         "title": "YT Downloader by Łukasz",
@@ -31,7 +34,9 @@ TRANSLATIONS = {
         "empty": "Please enter a link!",
         "lang_label": "Language:",
         "quality": "Quality:",
-        "progress": "Progress:"
+        "progress": "Progress:",
+        "choose_folder": "Choose folder",
+        "folder_label": "Save folder:"
     }
 }
 
@@ -40,10 +45,11 @@ class DownloadWorker(QThread):
     finished = pyqtSignal(bool, str)
     progress_changed = pyqtSignal(float)
 
-    def __init__(self, link, quality, lang):
+    def __init__(self, link, quality, save_path, lang):
         super().__init__()
         self.link = link
         self.quality = quality
+        self.save_path = save_path
         self.lang = lang
 
     def run(self):
@@ -53,6 +59,7 @@ class DownloadWorker(QThread):
         success, msg = download_video(
             self.link,
             self.quality,
+            self.save_path,
             progress_callback=progress_callback
         )
 
@@ -67,6 +74,7 @@ class MainWindow(QWidget):
         super().__init__()
 
         self.lang = "pl"
+        self.save_path = "."  # domyślnie bieżący folder
 
         self.setWindowTitle(TRANSLATIONS[self.lang]["title"])
         self.setMinimumWidth(420)
@@ -102,6 +110,14 @@ class MainWindow(QWidget):
         self.quality_select.addItem("Audio only", "audio")
         layout.addWidget(self.quality_select)
 
+        # folder zapisu
+        self.folder_label = QLabel(TRANSLATIONS[self.lang]["folder_label"] + " " + self.save_path)
+        layout.addWidget(self.folder_label)
+
+        self.folder_button = QPushButton(TRANSLATIONS[self.lang]["choose_folder"])
+        self.folder_button.clicked.connect(self.choose_folder)
+        layout.addWidget(self.folder_button)
+
         # pasek postępu
         self.progress_label = QLabel(TRANSLATIONS[self.lang]["progress"])
         layout.addWidget(self.progress_label)
@@ -110,12 +126,18 @@ class MainWindow(QWidget):
         self.progress_bar.setValue(0)
         layout.addWidget(self.progress_bar)
 
-        # przycisk
+        # przycisk pobierania
         self.button = QPushButton(TRANSLATIONS[self.lang]["download"])
         self.button.clicked.connect(self.start_download)
         layout.addWidget(self.button)
 
         self.setLayout(layout)
+
+    def choose_folder(self):
+        folder = QFileDialog.getExistingDirectory(self, "Select Folder")
+        if folder:
+            self.save_path = folder
+            self.folder_label.setText(TRANSLATIONS[self.lang]["folder_label"] + " " + folder)
 
     def change_language(self):
         self.lang = self.lang_select.currentData()
@@ -127,6 +149,8 @@ class MainWindow(QWidget):
         self.button.setText(TRANSLATIONS[self.lang]["download"])
         self.quality_label.setText(TRANSLATIONS[self.lang]["quality"])
         self.progress_label.setText(TRANSLATIONS[self.lang]["progress"])
+        self.folder_button.setText(TRANSLATIONS[self.lang]["choose_folder"])
+        self.folder_label.setText(TRANSLATIONS[self.lang]["folder_label"] + " " + self.save_path)
 
     def start_download(self):
         link = self.input.text().strip()
@@ -139,7 +163,7 @@ class MainWindow(QWidget):
         self.progress_bar.setValue(0)
         self.button.setEnabled(False)
 
-        self.worker = DownloadWorker(link, quality, self.lang)
+        self.worker = DownloadWorker(link, quality, self.save_path, self.lang)
         self.worker.progress_changed.connect(self.update_progress)
         self.worker.finished.connect(self.on_finished)
         self.worker.start()

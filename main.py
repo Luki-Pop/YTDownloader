@@ -1,4 +1,5 @@
 import yt_dlp
+import os
 
 QUALITY_MAP = {
     "360p": "bestvideo[height<=360]+bestaudio/best[height<=360]",
@@ -8,10 +9,11 @@ QUALITY_MAP = {
 }
 
 
-def download_video(link: str, quality: str, progress_callback=None):
+def download_video(link: str, quality: str, save_path: str, progress_callback=None):
     """
     Pobiera film z YouTube przy użyciu yt-dlp.
-    progress_callback(percent) — funkcja wywoływana przy zmianie postępu.
+    save_path — folder zapisu
+    progress_callback(percent) — callback postępu
     """
 
     def hook(d):
@@ -24,9 +26,12 @@ def download_video(link: str, quality: str, progress_callback=None):
                     pass
 
     try:
+        # upewniamy się, że folder istnieje
+        os.makedirs(save_path, exist_ok=True)
+
         ydl_opts = {
             "format": QUALITY_MAP[quality],
-            "outtmpl": "%(title)s.%(ext)s",
+            "outtmpl": os.path.join(save_path, "%(title)s.%(ext)s"),
             "merge_output_format": "mp4",
             "progress_hooks": [hook]
         }
