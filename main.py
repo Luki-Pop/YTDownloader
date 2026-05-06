@@ -1,16 +1,14 @@
-from pytube import YouTube
+import yt_dlp
 
-def Download(link):
-    youtubObject = YouTube(link)
-    youtubObject = youtubObject.streams.get_highest_resolution()
-    try:
-        youtubObject.download()
-    except:
-        print('ERROR,ERROR,ERROR')
-    print('SUCCESS, YOU PLUNDER THE YOUTUBE')
+def Download(link, quality="best"):
+    ydl_opts = {
+        "format": quality,
+        "outtmpl": "%(title)s.%(ext)s"
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([link])
 
 
-
-link = input("LINK GOES HIRE: ")
-
+link = input("LINK: ")
 Download(link)
