@@ -4,8 +4,6 @@ import shutil
 import subprocess
 import urllib.request
 import zipfile
-import winshell
-from win32com.client import Dispatch
 
 
 INSTALL_DIR = r"C:\Program Files\YTDownloader"
@@ -68,25 +66,31 @@ def install_app():
     shutil.copy("main.py", INSTALL_DIR)
     shutil.copy("gui.py", INSTALL_DIR)
 
+    # Tworzymy run.bat do uruchamiania aplikacji
+    with open(os.path.join(INSTALL_DIR, "run.bat"), "w") as f:
+        f.write(f'@echo off\npython "{os.path.join(INSTALL_DIR, "gui.py")}"\n')
+
     print("[OK] Files copied")
 
 
 def create_shortcut():
-    desktop = winshell.desktop()
-    path = os.path.join(desktop, "YTDownloader.lnk")
-    target = sys.executable
-    arguments = f'"{os.path.join(INSTALL_DIR, "gui.py")}"'
-    icon = target
+    print("[INFO] Creating desktop shortcut...")
 
-    shell = Dispatch('WScript.Shell')
-    shortcut = shell.CreateShortCut(path)
-    shortcut.Targetpath = target
-    shortcut.Arguments = arguments
-    shortcut.WorkingDirectory = INSTALL_DIR
-    shortcut.IconLocation = icon
-    shortcut.save()
+    shortcut_ps = rf'''
+$WshShell = New-Object -ComObject WScript.Shell
+$Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\YTDownloader.lnk")
+$Shortcut.TargetPath = "{INSTALL_DIR}\run.bat"
+$Shortcut.WorkingDirectory = "{INSTALL_DIR}"
+$Shortcut.Save()
+'''
 
-    print("[OK] Shortcut created on desktop")
+    with open("create_shortcut.ps1", "w") as f:
+        f.write(shortcut_ps)
+
+    run("powershell -ExecutionPolicy Bypass -File create_shortcut.ps1")
+    os.remove("create_shortcut.ps1")
+
+    print("[OK] Shortcut created")
 
 
 def main():
