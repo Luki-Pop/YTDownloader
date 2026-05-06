@@ -3,10 +3,10 @@ import os
 import imageio_ffmpeg
 
 QUALITY_MAP = {
-    "360p": "bestvideo[height<=360]+bestaudio/best[height<=360]",
-    "720p": "bestvideo[height<=720]+bestaudio/best[height<=720]",
-    "1080p": "bestvideo[height<=1080]+bestaudio/best[height<=1080]",
-    "audio": "bestaudio"
+    "360p": "bestvideo[height<=360][vcodec*=avc1]+bestaudio[acodec*=aac]/best[height<=360]",
+    "720p": "bestvideo[height<=720][vcodec*=avc1]+bestaudio[acodec*=aac]/best[height<=720]",
+    "1080p": "bestvideo[height<=1080][vcodec*=avc1]+bestaudio[acodec*=aac]/best[height<=1080]",
+    "audio": "bestaudio[acodec*=aac]/bestaudio"
 }
 
 FFMPEG_PATH = imageio_ffmpeg.get_ffmpeg_exe()
@@ -36,7 +36,15 @@ def download_video(link: str, quality: str, save_path: str, progress_callback=No
             "outtmpl": os.path.join(save_path, "%(title)s.%(ext)s"),
             "merge_output_format": "mp4",
             "progress_hooks": [hook],
-            "ffmpeg_location": FFMPEG_PATH,   # <-- KLUCZOWE!
+            "ffmpeg_location": FFMPEG_PATH,
+
+            # wymuszenie kompatybilnych kodeków
+            "postprocessors": [
+                {
+                    "key": "FFmpegVideoConvertor",
+                    "preferedformat": "mp4"
+                }
+            ]
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
