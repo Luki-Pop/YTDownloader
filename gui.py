@@ -4,7 +4,8 @@ from PyQt6.QtWidgets import (
     QLineEdit, QPushButton, QMessageBox, QComboBox
 )
 from PyQt6.QtCore import QThread, pyqtSignal
-from pytube import YouTube
+
+from main import download_video  # <-- import logiki pobierania
 
 
 # -------------------------
@@ -16,43 +17,45 @@ TRANSLATIONS = {
         "paste_link": "Wklej link do filmu:",
         "placeholder": "https://youtube.com/...",
         "download": "Pobierz",
-        "success": "SUKCES — You plunder the YouTube!",
+        "success": "SUKCES — pobieranie zakończone!",
         "error": "BŁĄD: ",
         "empty": "Podaj link!",
-        "lang_label": "Język:"
+        "lang_label": "Język:",
+        "quality": "Jakość:"
     },
     "en": {
         "title": "YT Downloader by Łukasz",
         "paste_link": "Paste video link:",
         "placeholder": "https://youtube.com/...",
         "download": "Download",
-        "success": "SUCCESS — You plunder the YouTube!",
+        "success": "SUCCESS — download complete!",
         "error": "ERROR: ",
         "empty": "Please enter a link!",
-        "lang_label": "Language:"
+        "lang_label": "Language:",
+        "quality": "Quality:"
     }
 }
 
 
 # -------------------------
-#   WORKER (pobieranie)
+#   WORKER (wątek)
 # -------------------------
 class DownloadWorker(QThread):
     finished = pyqtSignal(bool, str)
 
-    def __init__(self, link, lang):
+    def __init__(self, link, quality, lang):
         super().__init__()
         self.link = link
+        self.quality = quality
         self.lang = lang
 
     def run(self):
-        try:
-            yt = YouTube(self.link)
-            stream = yt.streams.get_highest_resolution()
-            stream.download()
+        success, msg = download_video(self.link, self.quality)
+
+        if success:
             self.finished.emit(True, TRANSLATIONS[self.lang]["success"])
-        except Exception as e:
-            self.finished.emit(False, TRANSLATIONS[self.lang]["error"] + str(e))
+        else:
+            self.finished.emit(False, TRANSLATIONS[self.lang]["error"] + msg)
 
 
 # -------------------------
@@ -62,14 +65,14 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.lang = "pl"  # domyślny język
+        self.lang = "pl"
 
         self.setWindowTitle(TRANSLATIONS[self.lang]["title"])
         self.setMinimumWidth(420)
 
         layout = QVBoxLayout()
 
-        # wybór języka
+        # język
         self.lang_label = QLabel(TRANSLATIONS[self.lang]["lang_label"])
         layout.addWidget(self.lang_label)
 
@@ -79,14 +82,24 @@ class MainWindow(QWidget):
         self.lang_select.currentIndexChanged.connect(self.change_language)
         layout.addWidget(self.lang_select)
 
-        # etykieta
+        # link
         self.label = QLabel(TRANSLATIONS[self.lang]["paste_link"])
         layout.addWidget(self.label)
 
-        # pole tekstowe
         self.input = QLineEdit()
         self.input.setPlaceholderText(TRANSLATIONS[self.lang]["placeholder"])
         layout.addWidget(self.input)
+
+        # jakość
+        self.quality_label = QLabel(TRANSLATIONS[self.lang]["quality"])
+        layout.addWidget(self.quality_label)
+
+        self.quality_select = QComboBox()
+        self.quality_select.addItem("360p", "360p")
+        self.quality_select.addItem("720p", "720p")
+        self.quality_select.addItem("1080p", "1080p")
+        self.quality_select.addItem("Audio only", "audio")
+        layout.addWidget(self.quality_select)
 
         # przycisk
         self.button = QPushButton(TRANSLATIONS[self.lang]["download"])
@@ -95,9 +108,7 @@ class MainWindow(QWidget):
 
         self.setLayout(layout)
 
-    # -------------------------
-    #   ZMIANA JĘZYKA
-    # -------------------------
+    # zmiana języka
     def change_language(self):
         self.lang = self.lang_select.currentData()
 
@@ -106,25 +117,23 @@ class MainWindow(QWidget):
         self.label.setText(TRANSLATIONS[self.lang]["paste_link"])
         self.input.setPlaceholderText(TRANSLATIONS[self.lang]["placeholder"])
         self.button.setText(TRANSLATIONS[self.lang]["download"])
+        self.quality_label.setText(TRANSLATIONS[self.lang]["quality"])
 
-    # -------------------------
-    #   START POBIERANIA
-    # -------------------------
+    # start pobierania
     def start_download(self):
         link = self.input.text().strip()
+        quality = self.quality_select.currentData()
 
         if not link:
             QMessageBox.warning(self, "Error", TRANSLATIONS[self.lang]["empty"])
             return
 
         self.button.setEnabled(False)
-        self.worker = DownloadWorker(link, self.lang)
+        self.worker = DownloadWorker(link, quality, self.lang)
         self.worker.finished.connect(self.on_finished)
         self.worker.start()
 
-    # -------------------------
-    #   KONIEC POBIERANIA
-    # -------------------------
+    # koniec pobierania
     def on_finished(self, success, message):
         self.button.setEnabled(True)
 
@@ -134,9 +143,7 @@ class MainWindow(QWidget):
             QMessageBox.critical(self, "Error", message)
 
 
-# -------------------------
-#   START APLIKACJI
-# -------------------------
+# start aplikacji
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
