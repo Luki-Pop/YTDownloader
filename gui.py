@@ -1,4 +1,5 @@
 import sys
+import os
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLabel,
     QLineEdit, QPushButton, QMessageBox, QComboBox,
@@ -9,6 +10,21 @@ from PyQt6.QtCore import QThread, pyqtSignal
 from main import download_video
 
 
+# -------------------------
+#   AUTO-UPDATE THREAD
+# -------------------------
+class UpdaterThread(QThread):
+    def run(self):
+        try:
+            import updater
+            updater.update_in_background()
+        except Exception as e:
+            print("[Updater] Error:", e)
+
+
+# -------------------------
+#   TŁUMACZENIA
+# -------------------------
 TRANSLATIONS = {
     "pl": {
         "title": "YT Downloader by Łukasz",
@@ -41,6 +57,9 @@ TRANSLATIONS = {
 }
 
 
+# -------------------------
+#   WORKER (pobieranie)
+# -------------------------
 class DownloadWorker(QThread):
     finished = pyqtSignal(bool, str)
     progress_changed = pyqtSignal(float)
@@ -69,12 +88,15 @@ class DownloadWorker(QThread):
             self.finished.emit(False, TRANSLATIONS[self.lang]["error"] + msg)
 
 
+# -------------------------
+#   GŁÓWNE OKNO
+# -------------------------
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
 
         self.lang = "pl"
-        self.save_path = "."  # domyślnie bieżący folder
+        self.save_path = os.path.expanduser("~/Downloads")
 
         self.setWindowTitle(TRANSLATIONS[self.lang]["title"])
         self.setMinimumWidth(420)
@@ -133,12 +155,20 @@ class MainWindow(QWidget):
 
         self.setLayout(layout)
 
+        # -------------------------
+        #   AUTO-UPDATE W TLE
+        # -------------------------
+        self.updater = UpdaterThread()
+        self.updater.start()
+
+    # wybór folderu
     def choose_folder(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder")
         if folder:
             self.save_path = folder
             self.folder_label.setText(TRANSLATIONS[self.lang]["folder_label"] + " " + folder)
 
+    # zmiana języka
     def change_language(self):
         self.lang = self.lang_select.currentData()
 
@@ -152,6 +182,7 @@ class MainWindow(QWidget):
         self.folder_button.setText(TRANSLATIONS[self.lang]["choose_folder"])
         self.folder_label.setText(TRANSLATIONS[self.lang]["folder_label"] + " " + self.save_path)
 
+    # start pobierania
     def start_download(self):
         link = self.input.text().strip()
         quality = self.quality_select.currentData()
@@ -168,9 +199,11 @@ class MainWindow(QWidget):
         self.worker.finished.connect(self.on_finished)
         self.worker.start()
 
+    # aktualizacja paska postępu
     def update_progress(self, percent):
         self.progress_bar.setValue(int(percent))
 
+    # koniec pobierania
     def on_finished(self, success, message):
         self.button.setEnabled(True)
         self.progress_bar.setValue(100)
@@ -181,6 +214,7 @@ class MainWindow(QWidget):
             QMessageBox.critical(self, "Error", message)
 
 
+# start aplikacji
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
