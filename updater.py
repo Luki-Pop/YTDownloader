@@ -1,39 +1,29 @@
-import subprocess
 import os
+import requests
 import shutil
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-os.chdir(BASE_DIR)
+UPDATE_URL = "https://raw.githubusercontent.com/Luki-Pop/YTDownloader/master/"
+FILES = ["main.py", "gui.py", "version.txt"]
 
-def run_python(script):
-    python = shutil.which("python") or shutil.which("python3")
-    if not python:
-        raise RuntimeError("Python not found in PATH")
+def download_file(name):
+    url = UPDATE_URL + name
+    r = requests.get(url, timeout=5)
+    if r.status_code == 200:
+        with open(os.path.join(BASE_DIR, name + ".new"), "wb") as f:
+            f.write(r.content)
 
-    log = os.path.join(BASE_DIR, "launcher.log")
-    with open(log, "a", encoding="utf-8") as f:
-        f.write(f"\n--- Running {script} ---\n")
-        subprocess.call([python, os.path.join(BASE_DIR, script)], stdout=f, stderr=f)
+def apply_pending_update():
+    for name in FILES:
+        new_file = os.path.join(BASE_DIR, name + ".new")
+        if os.path.exists(new_file):
+            shutil.move(new_file, os.path.join(BASE_DIR, name))
 
 def main():
-    # 1. updater w tle
     try:
-        python = shutil.which("python") or shutil.which("python3")
-        subprocess.Popen([python, os.path.join(BASE_DIR, "updater.py")])
-    except Exception as e:
-        pass
-
-    # 2. GUI
-    try:
-        run_python("gui.py")
-    except Exception as e:
-        pass
-
-    # 3. apply update
-    try:
-        import updater
-        updater.apply_pending_update()
-    except Exception as e:
+        for name in FILES:
+            download_file(name)
+    except:
         pass
 
 if __name__ == "__main__":
