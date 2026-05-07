@@ -10,6 +10,21 @@ from PyQt6.QtCore import QThread, pyqtSignal
 from main import download_video
 
 
+
+# -------------------------
+# GUI LOG
+# -------------------------
+
+import traceback
+
+def debug_exceptions():
+    def excepthook(type, value, tb):
+        with open("gui_error.log", "w", encoding="utf-8") as f:
+            traceback.print_exception(type, value, tb, file=f)
+        sys.exit(1)
+    sys.excepthook = excepthook
+
+
 # -------------------------
 #   TŁUMACZENIA
 # -------------------------
