@@ -143,11 +143,6 @@ class MainWindow(QWidget):
 
         self.setLayout(layout)
 
-        # -------------------------
-        #   AUTO-UPDATE W TLE
-        # -------------------------
-        self.updater = UpdaterThread()
-        self.updater.start()
 
     # wybór folderu
     def choose_folder(self):
