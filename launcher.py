@@ -54,3 +54,21 @@ def main():
     try:
         result = run_python("gui.py")
     except Exception:
+        result = -1
+
+    # 3. Zastosowanie aktualizacji po zamknięciu GUI
+    try:
+        import updater
+        updater.apply_pending_update()
+    except Exception:
+        pass
+
+    # --- KLUCZOWE: USUWAMY LOCK TYLKO JEŚLI GUI ZAKOŃCZYŁO SIĘ POPRAWNIE ---
+    if result == 0:
+        remove_lock()
+    else:
+        # GUI crash → NIE usuwamy locka → brak pętli i brak wielu instancji
+        pass
+
+if __name__ == "__main__":
+    main()
