@@ -21,7 +21,7 @@ def remove_lock():
     if os.path.exists(LOCKFILE):
         os.remove(LOCKFILE)
 
-# --- URUCHAMIANIE Pythona ---
+# --- URUCHAMIANIE Pythona Z LOGOWANIEM ---
 def run_python(script):
     python = shutil.which("python") or shutil.which("python3")
     if not python:
@@ -30,7 +30,14 @@ def run_python(script):
     log = os.path.join(BASE_DIR, "launcher.log")
     with open(log, "a", encoding="utf-8") as f:
         f.write(f"\n--- Running {script} ---\n")
-        subprocess.call([python, os.path.join(BASE_DIR, script)], stdout=f, stderr=f)
+        f.flush()
+        result = subprocess.call(
+            [python, os.path.join(BASE_DIR, script)],
+            stdout=f,
+            stderr=f
+        )
+        f.write(f"Return code: {result}\n")
+        return result
 
 # --- GŁÓWNA LOGIKA ---
 def main():
@@ -40,23 +47,10 @@ def main():
     try:
         python = shutil.which("python") or shutil.which("python3")
         subprocess.Popen([python, os.path.join(BASE_DIR, "updater.py")])
-    except Exception as e:
+    except Exception:
         pass
 
     # 2. Uruchomienie GUI
     try:
-        run_python("gui.py")
-    except Exception as e:
-        pass
-
-    # 3. Zastosowanie aktualizacji po zamknięciu GUI
-    try:
-        import updater
-        updater.apply_pending_update()
-    except Exception as e:
-        pass
-
-    remove_lock()
-
-if __name__ == "__main__":
-    main()
+        result = run_python("gui.py")
+    except Exception:
