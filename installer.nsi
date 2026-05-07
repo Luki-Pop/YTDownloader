@@ -23,6 +23,10 @@ Section "Install"
     File "version.txt"
     File "requirements.txt"
 
+    ; --- Usuwamy stare logi i lockfile (jeśli istnieją) ---
+    Delete "$INSTDIR\launcher.log"
+    Delete "$INSTDIR\app.lock"
+
     ; --- Instalacja zależności Pythona ---
     DetailPrint "Installing Python dependencies..."
     nsExec::ExecToLog 'cmd /c pip install -r "$INSTDIR\requirements.txt"'
