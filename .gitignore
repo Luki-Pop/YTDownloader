@@ -5,3 +5,5 @@ launcher.log
 __pycache__/main.cpython-314.pyc
 app.lock
 /__pycache__
+/__pycache__
+/build
