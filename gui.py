@@ -11,18 +11,6 @@ from main import download_video
 
 
 # -------------------------
-#   AUTO-UPDATE THREAD
-# -------------------------
-class UpdaterThread(QThread):
-    def run(self):
-        try:
-            import updater
-            updater.update_in_background()
-        except Exception as e:
-            print("[Updater] Error:", e)
-
-
-# -------------------------
 #   TŁUMACZENIA
 # -------------------------
 TRANSLATIONS = {
