@@ -2,6 +2,9 @@
 !define VERSION "1.0"
 !define INSTALLDIR "$LOCALAPPDATA\YTDownloader"
 
+Icon "YTDownloader.ico"
+UninstallIcon "YTDownloader.ico"
+
 OutFile "YTDownloader-Installer.exe"
 InstallDir "${INSTALLDIR}"
 RequestExecutionLevel user
@@ -21,6 +24,7 @@ Section "Install"
     File "updater.py"
     File "version.txt"
     File "requirements.txt"
+    File "YTDownloader.ico"
 
     Delete "$INSTDIR\launcher.log"
     Delete "$INSTDIR\app.lock"
@@ -28,7 +32,8 @@ Section "Install"
     DetailPrint "Installing Python dependencies..."
     nsExec::ExecToLog 'cmd /c pip install -r "$INSTDIR\requirements.txt"'
 
-    CreateShortcut "$DESKTOP\YTDownloader.lnk" "$INSTDIR\YTDownloader.exe"
+    File "YTDownloader.ico"
+    CreateShortcut "$DESKTOP\YTDownloader.lnk" "$INSTDIR\YTDownloader.exe" "" "$INSTDIR\YTDownloader.ico"
 
     WriteUninstaller "$INSTDIR\uninstall.exe"
 
