@@ -8,14 +8,11 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QThread, pyqtSignal
 
 from main import download_video
-
-
+import traceback
 
 # -------------------------
 # GUI LOG
 # -------------------------
-
-import traceback
 
 def debug_exceptions():
     def excepthook(type, value, tb):
