@@ -43,4 +43,20 @@ def main():
     except Exception as e:
         pass
 
-    # 2. Uruch
+    # 2. Uruchomienie GUI
+    try:
+        run_python("gui.py")
+    except Exception as e:
+        pass
+
+    # 3. Zastosowanie aktualizacji po zamknięciu GUI
+    try:
+        import updater
+        updater.apply_pending_update()
+    except Exception as e:
+        pass
+
+    remove_lock()
+
+if __name__ == "__main__":
+    main()
