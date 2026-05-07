@@ -15,29 +15,23 @@ Section "Install"
 
     SetOutPath "$INSTDIR"
 
-    ; --- Pliki aplikacji ---
-    File "YTDownloader.exe"     ; launcher.exe skompilowany PyInstallerem
+    File "YTDownloader.exe"
     File "main.py"
     File "gui.py"
     File "updater.py"
     File "version.txt"
     File "requirements.txt"
 
-    ; --- Usuwamy stare logi i lockfile (jeśli istnieją) ---
     Delete "$INSTDIR\launcher.log"
     Delete "$INSTDIR\app.lock"
 
-    ; --- Instalacja zależności Pythona ---
     DetailPrint "Installing Python dependencies..."
     nsExec::ExecToLog 'cmd /c pip install -r "$INSTDIR\requirements.txt"'
 
-    ; --- Skrót na pulpicie ---
     CreateShortcut "$DESKTOP\YTDownloader.lnk" "$INSTDIR\YTDownloader.exe"
 
-    ; --- Uninstaller ---
     WriteUninstaller "$INSTDIR\uninstall.exe"
 
-    ; --- Rejestr (dla Panelu Sterowania) ---
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME}"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" "$INSTDIR\uninstall.exe"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayVersion" "${VERSION}"
@@ -45,13 +39,10 @@ Section "Install"
 
 SectionEnd
 
-
 Section "Uninstall"
 
-    ; --- Usuwanie skrótu ---
     Delete "$DESKTOP\YTDownloader.lnk"
 
-    ; --- Usuwanie plików ---
     Delete "$INSTDIR\YTDownloader.exe"
     Delete "$INSTDIR\main.py"
     Delete "$INSTDIR\gui.py"
@@ -62,10 +53,8 @@ Section "Uninstall"
     Delete "$INSTDIR\app.lock"
     Delete "$INSTDIR\uninstall.exe"
 
-    ; --- Usuwanie folderu ---
     RMDir "$INSTDIR"
 
-    ; --- Usuwanie wpisu z rejestru ---
     DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
 
 SectionEnd
