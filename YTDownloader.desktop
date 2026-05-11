@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=YTDownloader
+Exec=AppRun
+Icon=YTDownloader
+Categories=AudioVideo;Network;
+Terminal=false
