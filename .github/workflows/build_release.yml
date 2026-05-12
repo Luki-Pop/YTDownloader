@@ -68,6 +68,15 @@ jobs:
       # Build AppImage
       # -------------------------------
 
+      - name: Fix desktop file encoding and permissions
+        run: |
+          echo "Converting YTDownloader.desktop to Linux format..."
+          sudo apt install -y dos2unix
+          dos2unix YTDownloader.desktop || true
+          sed -i 's/\r$//' YTDownloader.desktop
+          chmod 644 YTDownloader.desktop
+          echo "Desktop file encoding and permissions fixed."
+          file YTDownloader.desktop
 
       - name: Prepare AppDir
         run: |
