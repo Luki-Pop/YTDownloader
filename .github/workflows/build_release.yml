@@ -199,6 +199,6 @@ jobs:
             YTDownloader.rpm
             YTDownloader.tar.gz
             YTDownloader-archpkg.tar.gz
-            YTDownloader-Installer.msi
+            YTDownloader-Installer.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
