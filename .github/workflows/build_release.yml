@@ -47,6 +47,8 @@ jobs:
       # -------------------------------
       # Prepare AppDir
       # -------------------------------
+
+
       - name: Prepare AppDir
         run: |
           mkdir -p AppDir/usr/bin
@@ -55,7 +57,7 @@ jobs:
 
           cp dist/YTDownloader AppDir/usr/bin/
 
-        # Coy .desktop in two places 
+        # Coy .desktop in two places
           cp YTDownloader.desktop AppDir/usr/share/applications/
           cp YTDownloader.desktop AppDir/YTDownloader.desktop
 
