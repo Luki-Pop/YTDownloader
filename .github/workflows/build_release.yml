@@ -73,6 +73,26 @@ jobs:
           mkdir -p AppDir/usr/share/applications
           mkdir -p AppDir/usr/share/icons
 
+          echo "Copying binary..."
+          cp dist/YTDownloader AppDir/usr/bin/
+
+          echo "Copying desktop file..."
+          cp YTDownloader.desktop AppDir/usr/share/applications/
+
+          echo "Copying icon..."
+          cp YTDownloader.png AppDir/usr/share/icons/
+
+          echo "--- VERIFYING FILES ---"
+          echo "Applications folder:"
+          ls -l AppDir/usr/share/applications/
+
+          echo "Icons folder:"
+          ls -l AppDir/usr/share/icons/
+
+          echo "Bin folder:"
+          ls -l AppDir/usr/bin/
+          
+          
           cp dist/YTDownloader AppDir/usr/bin/
           cp YTDownloader.desktop AppDir/usr/share/applications/
           cp YTDownloader.png AppDir/usr/share/icons/
