@@ -16,7 +16,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y python3 python3-pip python3-venv patchelf fuse dpkg-dev fakeroot
+          sudo apt install -y python3 python3-pip python3-venv patchelf fuse dos2unix
 
       - name: Install PyInstaller
         run: pip install pyinstaller
@@ -27,106 +27,57 @@ jobs:
           ls -l dist/
 
       # -------------------------------
-      # Build tar.gz
+      # FIX DESKTOP FILE (Windows → Linux)
       # -------------------------------
-      - name: Build tar.gz package
-        run: |
-          mkdir -p package_tar/YTDownloader
-          cp dist/YTDownloader package_tar/YTDownloader/
-          cp YTDownloader.desktop package_tar/YTDownloader/
-          cp YTDownloader.png package_tar/YTDownloader/
-          tar -czvf YTDownloader.tar.gz -C package_tar YTDownloader
-
-      # -------------------------------
-      # Build DEB package
-      # -------------------------------
-      - name: Build DEB package
-        run: |
-          mkdir -p deb/DEBIAN
-          mkdir -p deb/usr/bin
-          mkdir -p deb/usr/share/applications
-          mkdir -p deb/usr/share/icons
-
-          cp dist/YTDownloader deb/usr/bin/
-          cp YTDownloader.desktop deb/usr/share/applications/
-          cp YTDownloader.png deb/usr/share/icons/
-
-          cat > deb/DEBIAN/control << EOF
-          Package: yt-downloader
-          Version: 1.0
-          Section: utils
-          Priority: optional
-          Architecture: amd64
-          Maintainer: ${{ github.actor }}
-          Description: YTDownloader - YouTube video downloader
-          EOF
-
-          dpkg-deb --build deb
-          mv deb.deb YTDownloader.deb
-
-      # -------------------------------
-      # Build AppImage
-      # -------------------------------
-
       - name: Fix desktop file encoding and permissions
         run: |
-          echo "Converting YTDownloader.desktop to Linux format..."
-          sudo apt install -y dos2unix
+          echo "Before conversion:"
+          file YTDownloader.desktop || true
+
           dos2unix YTDownloader.desktop || true
           sed -i 's/\r$//' YTDownloader.desktop
           chmod 644 YTDownloader.desktop
-          echo "Desktop file encoding and permissions fixed."
+
+          echo "After conversion:"
           file YTDownloader.desktop
 
+          echo "Desktop file content:"
+          cat -n YTDownloader.desktop
+
+      # -------------------------------
+      # Prepare AppDir
+      # -------------------------------
       - name: Prepare AppDir
         run: |
           mkdir -p AppDir/usr/bin
           mkdir -p AppDir/usr/share/applications
           mkdir -p AppDir/usr/share/icons
 
-          echo "Copying binary..."
           cp dist/YTDownloader AppDir/usr/bin/
 
-          echo "Copying desktop file..."
+        # Coy .desktop in two places 
           cp YTDownloader.desktop AppDir/usr/share/applications/
+          cp YTDownloader.desktop AppDir/YTDownloader.desktop
 
-          echo "Copying icon..."
           cp YTDownloader.png AppDir/usr/share/icons/
 
-          echo "--- VERIFYING FILES ---"
-          echo "Applications folder:"
-          ls -l AppDir/usr/share/applications/
-
-          echo "Icons folder:"
-          ls -l AppDir/usr/share/icons/
-
-          echo "Bin folder:"
-          ls -l AppDir/usr/bin/
-          
-          
-          cp dist/YTDownloader AppDir/usr/bin/
-          cp YTDownloader.desktop AppDir/usr/share/applications/
-          cp YTDownloader.png AppDir/usr/share/icons/
-          
-            # Debug
-
+      # -------------------------------
+      # DEBUG AppDir
+      # -------------------------------
       - name: DEBUG — verify AppDir contents
         run: |
-          echo "--- ROOT ---"
-          ls -R .
-          
-          echo "--- AppDir ---"
-          ls -R AppDir || true
-          
           echo "--- Applications folder ---"
-          ls -R AppDir/usr/share/applications || true
-          
-          echo "--- Icons folder ---"
-          ls -R AppDir/usr/share/icons || true
-          
-          echo "--- Bin folder ---"
-          ls -R AppDir/usr/bin || true
+          ls -l AppDir/usr/share/applications || true
 
+          echo "--- Top-level AppDir ---"
+          ls -l AppDir || true
+
+          echo "--- Desktop file content in AppDir ---"
+          cat -n AppDir/YTDownloader.desktop || true
+
+      # -------------------------------
+      # Create AppRun
+      # -------------------------------
       - name: Create AppRun
         run: |
           cat > AppDir/AppRun << 'EOF'
@@ -136,24 +87,28 @@ jobs:
           EOF
           chmod +x AppDir/AppRun
 
+      # -------------------------------
+      # Download appimagetool
+      # -------------------------------
       - name: Download appimagetool
         run: |
           wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
 
+      # -------------------------------
+      # Build AppImage
+      # -------------------------------
       - name: Build AppImage
         run: |
-          ./appimagetool-x86_64.AppImage AppDir YTDownloader-x86_64.AppImage
+          APPIMAGETOOL_VERBOSE=1 ./appimagetool-x86_64.AppImage AppDir YTDownloader-x86_64.AppImage
 
       # -------------------------------
-      # Upload all artifacts to release
+      # Upload release assets
       # -------------------------------
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
           files: |
             YTDownloader-x86_64.AppImage
-            YTDownloader.deb
-            YTDownloader.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
