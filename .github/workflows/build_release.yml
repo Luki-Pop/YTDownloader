@@ -1,0 +1,109 @@
+name: Build Linux Packages
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y python3 python3-pip python3-venv patchelf fuse dpkg-dev fakeroot
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build binary with PyInstaller
+        run: |
+          pyinstaller --onefile launcher_linux.py --name YTDownloader
+          ls -l dist/
+
+      # -------------------------------
+      # Build tar.gz
+      # -------------------------------
+      - name: Build tar.gz package
+        run: |
+          mkdir -p package_tar/YTDownloader
+          cp dist/YTDownloader package_tar/YTDownloader/
+          cp YTDownloader.desktop package_tar/YTDownloader/
+          cp YTDownloader.png package_tar/YTDownloader/
+          tar -czvf YTDownloader.tar.gz -C package_tar YTDownloader
+
+      # -------------------------------
+      # Build DEB package
+      # -------------------------------
+      - name: Build DEB package
+        run: |
+          mkdir -p deb/DEBIAN
+          mkdir -p deb/usr/bin
+          mkdir -p deb/usr/share/applications
+          mkdir -p deb/usr/share/icons
+
+          cp dist/YTDownloader deb/usr/bin/
+          cp YTDownloader.desktop deb/usr/share/applications/
+          cp YTDownloader.png deb/usr/share/icons/
+
+          cat > deb/DEBIAN/control << EOF
+          Package: yt-downloader
+          Version: 1.0
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Maintainer: ${{ github.actor }}
+          Description: YTDownloader - YouTube video downloader
+          EOF
+
+          dpkg-deb --build deb
+          mv deb.deb YTDownloader.deb
+
+      # -------------------------------
+      # Build AppImage
+      # -------------------------------
+      - name: Prepare AppDir
+        run: |
+          mkdir -p AppDir/usr/bin
+          mkdir -p AppDir/usr/share/applications
+          mkdir -p AppDir/usr/share/icons
+
+          cp dist/YTDownloader AppDir/usr/bin/
+          cp YTDownloader.desktop AppDir/usr/share/applications/
+          cp YTDownloader.png AppDir/usr/share/icons/
+
+      - name: Create AppRun
+        run: |
+          cat > AppDir/AppRun << 'EOF'
+          #!/bin/bash
+          HERE="$(dirname "$(readlink -f "$0")")"
+          exec "$HERE/usr/bin/YTDownloader"
+          EOF
+          chmod +x AppDir/AppRun
+
+      - name: Download appimagetool
+        run: |
+          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+
+      - name: Build AppImage
+        run: |
+          ./appimagetool-x86_64.AppImage AppDir YTDownloader-x86_64.AppImage
+
+      # -------------------------------
+      # Upload all artifacts to release
+      # -------------------------------
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            YTDownloader-x86_64.AppImage
+            YTDownloader.deb
+            YTDownloader.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
