@@ -63,10 +63,11 @@ jobs:
 
           dpkg-deb --build deb
           mv deb.deb YTDownloader.deb
+          
+          
+          
 
-      # -------------------------------
-      # Build AppImage
-      # -------------------------------
+      # Debug
 
       - name: DEBUG — verify AppDir contents
         run: |
@@ -84,6 +85,10 @@ jobs:
           
           echo "--- Bin folder ---"
           ls -R AppDir/usr/bin || true
+
+      # -------------------------------
+      # Build AppImage
+      # -------------------------------
             
 
       - name: Prepare AppDir
