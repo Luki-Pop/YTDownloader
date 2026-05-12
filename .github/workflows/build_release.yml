@@ -63,33 +63,11 @@ jobs:
 
           dpkg-deb --build deb
           mv deb.deb YTDownloader.deb
-          
-          
-          
-
-      # Debug
-
-      - name: DEBUG — verify AppDir contents
-        run: |
-          echo "--- ROOT ---"
-          ls -R .
-          
-          echo "--- AppDir ---"
-          ls -R AppDir || true
-          
-          echo "--- Applications folder ---"
-          ls -R AppDir/usr/share/applications || true
-          
-          echo "--- Icons folder ---"
-          ls -R AppDir/usr/share/icons || true
-          
-          echo "--- Bin folder ---"
-          ls -R AppDir/usr/bin || true
 
       # -------------------------------
       # Build AppImage
       # -------------------------------
-            
+
 
       - name: Prepare AppDir
         run: |
@@ -120,6 +98,25 @@ jobs:
           cp dist/YTDownloader AppDir/usr/bin/
           cp YTDownloader.desktop AppDir/usr/share/applications/
           cp YTDownloader.png AppDir/usr/share/icons/
+          
+            # Debug
+
+      - name: DEBUG — verify AppDir contents
+        run: |
+          echo "--- ROOT ---"
+          ls -R .
+          
+          echo "--- AppDir ---"
+          ls -R AppDir || true
+          
+          echo "--- Applications folder ---"
+          ls -R AppDir/usr/share/applications || true
+          
+          echo "--- Icons folder ---"
+          ls -R AppDir/usr/share/icons || true
+          
+          echo "--- Bin folder ---"
+          ls -R AppDir/usr/bin || true
 
       - name: Create AppRun
         run: |
