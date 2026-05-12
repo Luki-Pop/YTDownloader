@@ -60,6 +60,7 @@ jobs:
           cp YTDownloader.desktop AppDir/YTDownloader.desktop
 
           cp YTDownloader.png AppDir/usr/share/icons/
+          cp YTDownloader.png AppDir/
 
       # -------------------------------
       # DEBUG AppDir
