@@ -16,7 +16,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y python3 python3-pip python3-venv patchelf fuse dos2unix fakeroot dpkg-dev
+          sudo apt install -y python3 python3-pip python3-venv patchelf fuse dos2unix fakeroot dpkg-dev rpm
 
       - name: Install PyInstaller
         run: pip install pyinstaller
@@ -31,17 +31,10 @@ jobs:
       # -------------------------------
       - name: Fix desktop file encoding and permissions
         run: |
-          echo "Before conversion:"
-          file YTDownloader.desktop || true
-
           dos2unix YTDownloader.desktop || true
           sed -i 's/\r$//' YTDownloader.desktop
           chmod 644 YTDownloader.desktop
-
-          echo "After conversion:"
           file YTDownloader.desktop
-
-          echo "Desktop file content:"
           cat -n YTDownloader.desktop
 
       # -------------------------------
@@ -72,6 +65,53 @@ jobs:
           mv deb.deb YTDownloader.deb
 
       # -------------------------------
+      # Build RPM package
+      # -------------------------------
+      - name: Build RPM package
+        run: |
+          mkdir -p rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+
+          cp dist/YTDownloader rpmbuild/SOURCES/
+          cp YTDownloader.desktop rpmbuild/SOURCES/
+          cp YTDownloader.png rpmbuild/SOURCES/
+
+          cat > rpmbuild/SPECS/yt-downloader.spec << EOF
+          Name:           yt-downloader
+          Version:        1.0
+          Release:        1%{?dist}
+          Summary:        YTDownloader - YouTube video downloader
+          License:        MIT
+          URL:            https://github.com/Luki-Pop/YTDownloader
+          Source0:        YTDownloader
+          Source1:        YTDownloader.desktop
+          Source2:        YTDownloader.png
+          BuildArch:      x86_64
+
+          %description
+          YTDownloader - YouTube video downloader.
+
+          %install
+          mkdir -p %{buildroot}/usr/bin
+          mkdir -p %{buildroot}/usr/share/applications
+          mkdir -p %{buildroot}/usr/share/icons
+
+          install -m 755 %{SOURCE0} %{buildroot}/usr/bin/YTDownloader
+          install -m 644 %{SOURCE1} %{buildroot}/usr/share/applications/YTDownloader.desktop
+          install -m 644 %{SOURCE2} %{buildroot}/usr/share/icons/YTDownloader.png
+
+          %files
+          /usr/bin/YTDownloader
+          /usr/share/applications/YTDownloader.desktop
+          /usr/share/icons/YTDownloader.png
+
+          %changelog
+          EOF
+
+          rpmbuild --define "_topdir $(pwd)/rpmbuild" -bb rpmbuild/SPECS/yt-downloader.spec
+
+          cp rpmbuild/RPMS/x86_64/*.rpm YTDownloader.rpm
+
+      # -------------------------------
       # Build tar.gz package
       # -------------------------------
       - name: Build tar.gz package
@@ -81,6 +121,36 @@ jobs:
           cp YTDownloader.desktop package_tar/YTDownloader/
           cp YTDownloader.png package_tar/YTDownloader/
           tar -czvf YTDownloader.tar.gz -C package_tar YTDownloader
+
+      # -------------------------------
+      # Generate PKGBUILD (Arch Linux)
+      # -------------------------------
+      - name: Generate PKGBUILD (Arch Linux)
+        run: |
+          mkdir -p archpkg
+          cat > archpkg/PKGBUILD << 'EOF'
+          pkgname=yt-downloader
+          pkgver=1.0
+          pkgrel=1
+          pkgdesc="YTDownloader - YouTube video downloader"
+          arch=('x86_64')
+          url="https://github.com/Luki-Pop/YTDownloader"
+          license=('MIT')
+          source=('YTDownloader' 'YTDownloader.desktop' 'YTDownloader.png')
+          sha256sums=('SKIP' 'SKIP' 'SKIP')
+
+          package() {
+              install -Dm755 "$srcdir/YTDownloader" "$pkgdir/usr/bin/YTDownloader"
+              install -Dm644 "$srcdir/YTDownloader.desktop" "$pkgdir/usr/share/applications/YTDownloader.desktop"
+              install -Dm644 "$srcdir/YTDownloader.png" "$pkgdir/usr/share/icons/YTDownloader.png"
+          }
+          EOF
+
+          cp dist/YTDownloader archpkg/
+          cp YTDownloader.desktop archpkg/
+          cp YTDownloader.png archpkg/
+
+          tar -czvf YTDownloader-archpkg.tar.gz -C archpkg .
 
       # -------------------------------
       # Prepare AppDir for AppImage
@@ -93,31 +163,12 @@ jobs:
 
           cp dist/YTDownloader AppDir/usr/bin/
 
-          # Desktop file in two locations (required by AppImageKit)
           cp YTDownloader.desktop AppDir/usr/share/applications/
           cp YTDownloader.desktop AppDir/YTDownloader.desktop
 
-          # Icon in two locations (required by AppImageKit)
           cp YTDownloader.png AppDir/usr/share/icons/
           cp YTDownloader.png AppDir/
 
-      # -------------------------------
-      # DEBUG AppDir
-      # -------------------------------
-      - name: DEBUG — verify AppDir contents
-        run: |
-          echo "--- Applications folder ---"
-          ls -l AppDir/usr/share/applications || true
-
-          echo "--- Top-level AppDir ---"
-          ls -l AppDir || true
-
-          echo "--- Desktop file content in AppDir ---"
-          cat -n AppDir/YTDownloader.desktop || true
-
-      # -------------------------------
-      # Create AppRun
-      # -------------------------------
       - name: Create AppRun
         run: |
           cat > AppDir/AppRun << 'EOF'
@@ -127,17 +178,11 @@ jobs:
           EOF
           chmod +x AppDir/AppRun
 
-      # -------------------------------
-      # Download appimagetool
-      # -------------------------------
       - name: Download appimagetool
         run: |
           wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
 
-      # -------------------------------
-      # Build AppImage
-      # -------------------------------
       - name: Build AppImage
         run: |
           APPIMAGETOOL_VERBOSE=1 ./appimagetool-x86_64.AppImage AppDir YTDownloader-x86_64.AppImage
@@ -151,6 +196,9 @@ jobs:
           files: |
             YTDownloader-x86_64.AppImage
             YTDownloader.deb
+            YTDownloader.rpm
             YTDownloader.tar.gz
+            YTDownloader-archpkg.tar.gz
+            YTDownloader-Installer.msi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
