@@ -13,42 +13,35 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install system dependencies
+      - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y python3 python3-venv python3-pip patchelf fuse
+          sudo apt install -y python3 python3-pip python3-venv patchelf fuse
 
-      - name: Create Python venv
+      - name: Install PyInstaller
         run: |
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install pyinstaller
 
-      - name: Prepare AppDir structure
+      - name: Build binary with PyInstaller
+        run: |
+          pyinstaller --onefile launcher_linux.py --name YTDownloader
+
+      - name: Prepare AppDir
         run: |
           mkdir -p AppDir/usr/bin
-          mkdir -p AppDir/usr/lib
           mkdir -p AppDir/usr/share/applications
           mkdir -p AppDir/usr/share/icons
 
-      - name: Copy application files
-        run: |
-          cp launcher_linux.py AppDir/
+          cp dist/YTDownloader AppDir/usr/bin/
           cp YTDownloader.desktop AppDir/usr/share/applications/
           cp YTDownloader.png AppDir/usr/share/icons/
-          cp -r venv/lib/python3.10 AppDir/usr/lib/python3.10
-          cp -r venv/bin AppDir/usr/bin
 
       - name: Create AppRun
         run: |
           cat > AppDir/AppRun << 'EOF'
           #!/bin/bash
           HERE="$(dirname "$(readlink -f "$0")")"
-          export PYTHONHOME="$HERE/usr"
-          export PYTHONPATH="$HERE/usr/lib/python3.10/site-packages"
-          export PATH="$HERE/usr/bin:$PATH"
-          exec "$HERE/launcher_linux.py"
+          exec "$HERE/usr/bin/YTDownloader"
           EOF
           chmod +x AppDir/AppRun
 
