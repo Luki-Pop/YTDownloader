@@ -3,7 +3,7 @@ name: Build AppImage
 on:
   push:
     tags:
-      - "v*"
+      - "*"
 
 jobs:
   build-appimage:
@@ -23,7 +23,7 @@ jobs:
           python3 -m venv venv
           source venv/bin/activate
           pip install --upgrade pip
-          pip install pyqt6 yt-dlp
+          pip install -r requirements.txt
 
       - name: Prepare AppDir structure
         run: |
@@ -32,25 +32,23 @@ jobs:
           mkdir -p AppDir/usr/share/applications
           mkdir -p AppDir/usr/share/icons
 
+      - name: Copy application files
+        run: |
           cp launcher_linux.py AppDir/
-          cp gui.py AppDir/
-          cp YTDownloader.png AppDir/usr/share/icons/
           cp YTDownloader.desktop AppDir/usr/share/applications/
-
-          cp -r venv/bin AppDir/usr/
-          cp -r venv/lib AppDir/usr/
-
-          mv AppDir/usr/bin/python AppDir/usr/bin/python3
+          cp YTDownloader.png AppDir/usr/share/icons/
+          cp -r venv/lib/python3.10 AppDir/usr/lib/python3.10
+          cp -r venv/bin AppDir/usr/bin
 
       - name: Create AppRun
         run: |
-          cat << 'EOF' > AppDir/AppRun
+          cat > AppDir/AppRun << 'EOF'
           #!/bin/bash
           HERE="$(dirname "$(readlink -f "$0")")"
           export PYTHONHOME="$HERE/usr"
           export PYTHONPATH="$HERE/usr/lib/python3.10/site-packages"
           export PATH="$HERE/usr/bin:$PATH"
-          exec "$HERE/usr/bin/python3" "$HERE/launcher_linux.py"
+          exec "$HERE/launcher_linux.py"
           EOF
           chmod +x AppDir/AppRun
 
@@ -63,7 +61,7 @@ jobs:
         run: |
           ./appimagetool-x86_64.AppImage AppDir YTDownloader-x86_64.AppImage
 
-      - name: Upload AppImage to Release
+      - name: Upload AppImage to release
         uses: softprops/action-gh-release@v2
         with:
           files: YTDownloader-x86_64.AppImage
